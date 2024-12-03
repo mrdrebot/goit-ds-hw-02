@@ -1,15 +1,14 @@
 import sqlite3
 
 def create_db():
-# читаємо файл зі скриптом для створення БД
+    # Read script file to create DB
     with open('database_config.sql', 'r') as sql_scripts:
         create_base_tables = sql_scripts.read()
 
-# створюємо з'єднання з БД (якщо файлу з БД немає, він буде створений)
-    with sqlite3.connect('database_config.db') as base_connect:
+    # Create connection with DB 
+    with sqlite3.connect('database.db') as base_connect:
         cur = base_connect.cursor()
-# виконуємо скрипт із файлу, який створить таблиці в БД
-        # print(create_base_tables)
+        # Create tables in th DB fron script file
         cur.executescript(create_base_tables)
 
 if __name__ == "__main__":

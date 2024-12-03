@@ -1,106 +1,79 @@
-# from datetime import datetime
 import faker
 from random import randint, choice
 import sqlite3
+from create_db import create_db
 
 NUMBER_USERS = 3
-NUMBER_STATUS = 30
-NUMBER_TASKS = 5
+NUMBER_TASKS = 10
+STATUS_TYPES = [('new',), ('in progress',), ('completed',)] # status type list
 
-def generate_fake_data(number_users, number_status, number_tasks) -> tuple():
-    fake_users = []# тут зберігатимемо компанії
-    fake_status = [('new',), ('in progress',), ('completed',)] # тут зберігатимемо співробітників
-    fake_tasks = []# тут зберігатимемо посади
-    '''Візьмемо три компанії з faker і помістимо їх у потрібну змінну'''
+def generate_fake_data(number_users, number_tasks) -> tuple():
+    fake_users_names = []
+    fake_users_emails = []
+    fake_tasks_titles = []
+    fake_tasks_descriptions = []
+
     fake_data = faker.Faker()
 
-# Створимо набір компаній у кількості number_companies
+# Generate users
     for _ in range(number_users):
-        fake_users.append(fake_data.name())
+        fake_users_names.append(fake_data.name())
 
-# Згенеруємо тепер number_employees кількість співробітників
-    for _ in range(number_status):
-        fake_status.append(fake_data.name())
+# Generate users emails
+    for _ in range(number_users):
+        fake_users_emails.append(fake_data.email())
 
-# Та number_post набір посад
+# Generate tasks titles
     for _ in range(number_tasks):
-        fake_tasks.append(fake_data.sentence())
+        fake_tasks_titles.append(fake_data.catch_phrase())
 
-    return fake_users, fake_status, fake_tasks
+# Generate task descriptions
+    for _ in range(number_tasks):
+        fake_tasks_descriptions.append(fake_data.text(max_nb_chars=100))
 
-def prepare_data(companies, employees, posts) -> tuple():
-    for_companies = []
-# Готуємо список кортежів назв компаній
-    for company in companies:
-        for_companies.append((company, ))
+    return fake_users_names, fake_users_emails, fake_tasks_titles, fake_tasks_descriptions
 
-    for_employees = []# для таблиці employees
+def prepare_data(users_name, emails, tasks_titles, tasks_descriptions) -> tuple():
+    # Create a list of user tuples
+    for_users = []
+    for name in users_name:
+        email = choice(emails)
+        for_users.append((name, email))
+        emails.remove(email)
 
-    for emp in employees:
-        '''
-        Для записів у таблицю співробітників нам потрібно додати посаду та id компанії. Компаній у нас було за замовчуванням
-        NUMBER_COMPANIES, при створенні таблиці companies для поля id ми вказували INTEGER AUTOINCREMENT - тому кожен
-        запис отримуватиме послідовне число, збільшене на 1, починаючи з 1. Тому компанію вибираємо випадково
-        у цьому діапазоні
-        '''
-        for_employees.append((emp, choice(posts), randint(1, NUMBER_USERS)))
+    # Create a list of task tuples
+    for_tasks = []
+    for task in tasks_titles:
+        for_tasks.append((task, choice(tasks_descriptions), randint(1, len(STATUS_TYPES)), randint(1, NUMBER_USERS)))
 
-    '''
-    Подібні операції виконаємо й у таблиці payments виплати зарплат. Приймемо, що виплата зарплати у всіх компаніях
-    виконувалася з 10 по 20 числа кожного місяця. Діапазон зарплат генеруватимемо від 1000 до 10000 у.о.
-    для кожного місяця та кожного співробітника.
-    '''
-    for_payments = []
+    return for_users, for_tasks
 
-    for month in range(1, 12 + 1):
-# Виконуємо цикл за місяцями'''
-        payment_date = datetime(2021, month, randint(10, 20)).date()
-        for emp in range(1, NUMBER_STATUS + 1):
-# Виконуємо цикл за кількістю співробітників
-            for_payments.append((emp, payment_date, randint(1000, 10000)))
-
-    return for_companies, for_employees, for_payments
-
-def insert_data_to_db(companies, employees, payments) -> None:
-# Створимо з'єднання з нашою БД та отримаємо об'єкт курсора для маніпуляцій з даними
-
-    with sqlite3.connect('salary.db') as con:
-
+def insert_data_to_db(users, status, tasks) -> None:
+    # Create connection with our DB and will get cursor object for data manipulation
+    with sqlite3.connect('database.db') as con:
         cur = con.cursor()
+        # Create script to add users data in the DB      
+        sql_to_users = """INSERT INTO users(fullname, email)
+                               VALUES (?, ?)"""
+        # Add users data in the DB
+        cur.executemany(sql_to_users, users)
 
-        '''Заповнюємо таблицю компаній. І створюємо скрипт для вставлення, де змінні, які вставлятимемо, помітимо
-        знаком заповнювача (?) '''
-
-        sql_to_companies = """INSERT INTO companies(company_name)
+        # Create script to add status types in the DB
+        sql_to_statuses = """INSERT INTO status(name)
                                VALUES (?)"""
+        # Add status types in the DB
+        cur.executemany(sql_to_statuses, status)
 
-        '''Для вставлення відразу всіх даних скористаємося методом executemany курсора. Першим параметром буде текст
-        скрипту, а другим - дані (список кортежів).'''
+        # Create script to add tasks in the DB
+        sql_to_tasks = """INSERT INTO tasks(title, description, status_id, user_id)
+                              VALUES (?, ?, ?, ?)"""
+        # Add tasks in the DB
+        cur.executemany(sql_to_tasks, tasks)
 
-        cur.executemany(sql_to_companies, companies)
-
-# Далі вставляємо дані про співробітників. Напишемо для нього скрипт і вкажемо змінні
-
-        sql_to_employees = """INSERT INTO employees(employee, post, company_id)
-                               VALUES (?, ?, ?)"""
-
-# Дані були підготовлені заздалегідь, тому просто передаємо їх у функцію
-
-        cur.executemany(sql_to_employees, employees)
-
-# Останньою заповнюємо таблицю із зарплатами
-
-        sql_to_payments = """INSERT INTO payments(employee_id, date_of, total)
-                              VALUES (?, ?, ?)"""
-
-# Вставляємо дані про зарплати
-
-        cur.executemany(sql_to_payments, payments)
-
-# Фіксуємо наші зміни в БД
-
+        # Fix changes in the DB
         con.commit()
 
 if __name__ == "__main__":
-    companies, employees, posts = prepare_data(*generate_fake_data(NUMBER_USERS, NUMBER_STATUS, NUMBER_TASKS))
-    insert_data_to_db(companies, employees, posts)
+    create_db() # create DB and drop tabels
+    user_table, task_table = prepare_data(*generate_fake_data(NUMBER_USERS, NUMBER_TASKS))
+    insert_data_to_db(user_table, STATUS_TYPES, task_table)

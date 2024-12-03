@@ -15,7 +15,7 @@ CREATE TABLE status (
 
 -- Table: tasks
 DROP TABLE IF EXISTS tasks;
-CREATE TABLE payments (
+CREATE TABLE tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title VARCHAR(100) NOT NULL,
     description TEXT NOT NULL,
