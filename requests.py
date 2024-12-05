@@ -75,8 +75,7 @@ sql_script = """
 INSERT INTO tasks (title, description, status_id, user_id)
 VALUES ('New Task', 'Description of the new task', 1, 2);
 """
-# print(insert_task_to_user(sql_script))
-# print(select_user_tasks_by_user(sql_script))
+print(insert_task_to_user(sql_script))
 
 # Get all tasks that are not yet finished
 def select_not_finished_tasks(sql_script: str) -> list:
@@ -133,21 +132,6 @@ SET fullname = "Jonh Dou"
 WHERE id = 2;
 """
 # print(select_user_by_email(sql_script))
-
-# Count tasks by status
-def count_tasks_by_status(sql_script: str) -> list:
-    with sqlite3.connect('database.db') as base_connect:
-        cur = base_connect.cursor()
-        cur.execute(sql_script)
-        return cur.fetchall()
-
-sql_script = """
-SELECT s.name AS status_name, COUNT(t.id) AS task_count
-FROM status s
-LEFT JOIN tasks t ON s.id = t.status_id
-GROUP BY s.id, s.name;
-"""
-# print(count_tasks_by_status(sql_script))
 
 # Count tasks by status
 def count_tasks_by_status(sql_script: str) -> list:
@@ -226,3 +210,18 @@ GROUP BY u.id, u.fullname, u.email;
 
 """
 # print(select_users_and_count_tasks(sql_script))
+
+# Delete user by id
+def delete_user_by_id(sql_script: str) -> list:
+    with sqlite3.connect('database.db') as base_connect:
+        base_connect.execute("PRAGMA foreign_keys = ON;")
+        cur = base_connect.cursor()
+        cur.execute(sql_script)
+        return cur.fetchall()
+
+sql_script = """
+DELETE FROM users
+WHERE id = 1;
+"""
+
+# print(delete_user_by_id(sql_script))

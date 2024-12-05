@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "ds&ml module 2 hw database"
+name = "ds_ml_module_2_hw_database"
 version = "0.1.0"
 description = "DS&ML module 2 HW Database"
 authors = ["mrdrebot <m.r.drebot.j@gmail.com>"]
