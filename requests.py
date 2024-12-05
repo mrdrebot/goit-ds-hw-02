@@ -193,4 +193,36 @@ SELECT *
 FROM tasks
 WHERE description = '';
 """
-print(select_tasks_by_non_description(sql_script))
+# print(select_tasks_by_non_description(sql_script))
+
+# Select users and tasks by status
+def select_users_and_tasks_by_status(sql_script: str) -> list:
+    with sqlite3.connect('database.db') as base_connect:
+        cur = base_connect.cursor()
+        cur.execute(sql_script)
+        return cur.fetchall()
+
+sql_script = """
+SELECT u.id AS user_id, u.fullname, u.email, t.id AS task_id, t.title, t.description, s.name AS status_name
+FROM users u
+INNER JOIN tasks t ON u.id = t.user_id
+INNER JOIN status s ON t.status_id = s.id
+WHERE s.name = 'in progress';
+"""
+# print(select_tasks_by_non_description(sql_script))
+
+# Select users and count they tasks
+def select_users_and_count_tasks(sql_script: str) -> list:
+    with sqlite3.connect('database.db') as base_connect:
+        cur = base_connect.cursor()
+        cur.execute(sql_script)
+        return cur.fetchall()
+
+sql_script = """
+SELECT u.id AS user_id, u.fullname, u.email, COUNT(t.id) AS task_count
+FROM users u
+LEFT JOIN tasks t ON u.id = t.user_id
+GROUP BY u.id, u.fullname, u.email;
+
+"""
+# print(select_users_and_count_tasks(sql_script))
